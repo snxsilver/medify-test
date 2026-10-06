@@ -17,10 +17,12 @@ return new class extends Migration
             $table->id();
             $table->string('kode');
             $table->string('nama');
+            $table->string('kategori_id');
             $table->integer('harga_beli');
             $table->integer('laba');
             $table->string('supplier');
             $table->string('jenis');
+            $table->string('foto')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

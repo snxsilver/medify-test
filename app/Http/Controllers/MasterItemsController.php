@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\MasterItem;
+use App\Models\Category;
 use Illuminate\Http\Request;
+use Image;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Concerns\FromArray;
 
 class MasterItemsController extends Controller
 {
@@ -21,12 +25,26 @@ class MasterItemsController extends Controller
 
         $data_search = MasterItem::query();
 
-        if (!empty($kode)) $data_search = $data_search->where('kode', $kode);
-        if (!empty($nama)) $data_search = $data_search->where('nama', 'LIKE', '%' . $nama . '%');
-        if (!empty($hargamin)) $data_search = $data_search->where('harga_beli', '>=', $hargamin)->where('harga_beli', '<=', $hargamax);
+        if (!empty($kode)) {
+            $data_search->where('kode', $kode);
+        }
 
-        $data_search = $data_search->select('kode', 'nama', 'jenis', 'harga_beli', 'laba', 'supplier')->orderBy('id')->get();
+        if (!empty($nama)) {
+            $data_search->where('nama', 'LIKE', '%' . $nama . '%');
+        }
 
+        if (!empty($hargamin)) {
+            $data_search->where('harga_beli', '>=', $hargamin);
+        }
+
+        if (!empty($hargamax)) {
+            $data_search->where('harga_beli', '<=', $hargamax);
+        }
+
+        $data_search = $data_search
+            ->select('kode', 'nama', 'jenis', 'harga_beli', 'laba', 'supplier')
+            ->orderBy('id')
+            ->get();
 
         return json_encode([
             'status' => 200,
@@ -34,17 +52,20 @@ class MasterItemsController extends Controller
         ]);
     }
 
-    public function formView($method, $id = 0)
-    {
-        if ($method == 'new') {
-            $item = [];
-        } else {
-            $item = MasterItem::find($id);
-        }
-        $data['item'] = $item;
-        $data['method'] = $method;
-        return view('master_items.form.index', $data);
+public function formView($method, $id = 0)
+{
+    if ($method == 'new') {
+        $item = [];
+    } else {
+        $item = MasterItem::find($id);
     }
+
+    $data['item'] = $item;
+    $data['method'] = $method;
+    $data['categories'] = Category::orderBy('nama')->get();
+
+    return view('master_items.form.index', $data);
+}
 
     public function singleView($kode)
     {
@@ -54,6 +75,7 @@ class MasterItemsController extends Controller
 
     public function formSubmit(Request $request, $method, $id = 0)
     {
+        $req = $request;
         if ($method == 'new') {
             $data_item = new MasterItem;
             $kode = MasterItem::count('id');
@@ -71,6 +93,27 @@ class MasterItemsController extends Controller
         $data_item->kode = $kode;
         $data_item->supplier = $request->supplier;
         $data_item->jenis = $request->jenis;
+
+        if ($request->hasFile('image')) {
+            if ($request->file('image')->isValid()) {
+                $destinationPath = public_path('uploads/barang/'); // upload path
+                $extension = $request->file('image')->getClientOriginalExtension(); // getting image extension
+                $fileName = $request['nama'].'-'.rand(11111,99999).'.'.$extension; // renaming image
+                $request->file('image')->move($destinationPath, $fileName); // uploading file to given path
+
+                $gbresize = Image::make($destinationPath.$fileName);
+                $gbresize->resize(600, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                })->save($destinationPath.$fileName);
+
+                $req['foto'] = $fileName;
+                unset($req['image']);
+            }
+        }
+
+        $data_item->foto = $req['foto'];
+
         $data_item->save();
 
         return redirect('master-items');
@@ -112,4 +155,55 @@ class MasterItemsController extends Controller
         $random = rand(0,4);
         return $array[$random];
     }
+
+    public function exportExcel()
+{
+    $items = MasterItem::orderBy('id')->get();
+
+    $data = [
+        [
+            'No',
+            'Nama Kategori',
+            'Nama Items',
+            'Nama Supplier',
+            'Harga',
+            'Laba',
+            'Harga Jual',
+        ]
+    ];
+
+    $no = 1;
+
+    foreach ($items as $item) {
+        $harga_jual = $item->harga_beli +
+            ($item->harga_beli * $item->laba / 100);
+
+        $data[] = [
+            $no++,
+            $item->jenis,
+            $item->nama,
+            $item->supplier,
+            $item->harga_beli,
+            $item->laba,
+            round($harga_jual),
+        ];
+    }
+
+    return Excel::download(
+        new class($data) implements FromArray {
+            private $data;
+
+            public function __construct($data)
+            {
+                $this->data = $data;
+            }
+
+            public function array(): array
+            {
+                return $this->data;
+            }
+        },
+        'master-items.xlsx'
+    );
+}
 }

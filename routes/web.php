@@ -20,7 +20,7 @@ Route::get('/', function () {
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/', [App\Http\Controllers\HomeController::class, 'index']);
 Route::get('/master-items', [App\Http\Controllers\MasterItemsController::class, 'index']);
 Route::get('/master-items/search', [App\Http\Controllers\MasterItemsController::class, 'search']);
 Route::get('/master-items/form/{method}/{id?}', [App\Http\Controllers\MasterItemsController::class, 'formView']);
@@ -28,6 +28,23 @@ Route::post('/master-items/form/{method}/{id?}', [App\Http\Controllers\MasterIte
 
 Route::get('/master-items/view/{kode}', [App\Http\Controllers\MasterItemsController::class, 'singleView']);
 Route::get('/master-items/delete/{id}', [App\Http\Controllers\MasterItemsController::class, 'delete']);
+
+Route::get('/category', [App\Http\Controllers\CategoryController::class, 'index']);
+Route::get('/category/search', [App\Http\Controllers\CategoryController::class, 'search']);
+Route::get('/category/form/{method}/{id?}', [App\Http\Controllers\CategoryController::class, 'formView']);
+Route::post('/category/form/{method}/{id?}', [App\Http\Controllers\CategoryController::class, 'formSubmit']);
+
+Route::get('/category/item', [App\Http\Controllers\CategoryController::class, 'item']);
+
+Route::get('/category/view/{kode}', [App\Http\Controllers\CategoryController::class, 'singleView']);
+Route::get('/category/delete/{id}', [App\Http\Controllers\CategoryController::class, 'delete']);
+
+Route::get(
+    '/category/printout/{kode}',
+    [App\Http\Controllers\CategoryController::class, 'printout']
+);
+
+Route::get('/master-items/export', [App\Http\Controllers\MasterItemsController::class, 'exportExcel']);
 
 
 Route::get('/master-items/update-random-data', [App\Http\Controllers\MasterItemsController::class, 'updateRandomData']);

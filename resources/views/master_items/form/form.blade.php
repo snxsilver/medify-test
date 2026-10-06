@@ -1,4 +1,4 @@
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     @csrf
     @if($method == 'edit')
     <div class="form-group">
@@ -38,14 +38,23 @@
     @php $selected = $item->jenis ?? ''; @endphp
     <div class="form-group">
         <label>Jenis</label>
-        <select class="form-control" required name="jenis">
-            <option @if($selected == '') selected @endif value="">--Pilih--</option>
-            <option @if($selected == 'Obat') selected @endif>Obat</option>
-            <option @if($selected == 'Alkes') selected @endif>Alkes</option>
-            <option @if($selected == 'Matkes') selected @endif>Matkes</option>
-            <optio @if($selected == 'Umum') selected @endif>Umum</option>
-            <optio @if($selected == 'ATK') selected @endif>ATK</option>
-        </select>
+    <select class="form-control" required name="jenis">
+        <option value="">--Pilih--</option>
+
+        @foreach($categories as $category)
+            <option
+                value="{{ $category->nama }}"
+                @if($selected == $category->nama) selected @endif
+            >
+                {{ $category->nama }}
+            </option>
+        @endforeach
+    </select>
+    </div>
+
+    <div class="form-group">
+        <label>Foto</label>
+        <input type="file" class="form-control" name="image" accept="image/*" value="{{$item->laba ?? ''}}">
     </div>
 
     <button class="btn btn-primary mt-3">Submit</button>
